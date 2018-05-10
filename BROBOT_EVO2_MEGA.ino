@@ -8,7 +8,7 @@
 // Modified: 10/05/2018 by Monty McGraw (Nikola-wan) for Arduino Mega
 // Version: 2.82
 // License: GPL v2
-// Compiled and tested with Arduino 1.6.8. This new version of code does not need external libraries (only Arduino standard libraries)
+// Compiled and tested with Arduino 1.8.5. This modified version of code adds SoftwareServo (only Arduino standard libraries)
 // Project URL: http://jjrobots.com/b-robot-evo-2-much-more-than-a-self-balancing-robot (Features,documentation,build instructions,how it works, SHOP,...)
 // New updates:
 //   - New default parameters specially tuned for BROBOT EVO 2 version (More agile, more stable...)
