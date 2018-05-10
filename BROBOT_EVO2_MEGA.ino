@@ -1,10 +1,10 @@
 // BROBOT EVO 2 by JJROBOTS
 // SELF BALANCE ARDUINO ROBOT WITH STEPPER MOTORS CONTROLLED WITH YOUR SMARTPHONE
-// JJROBOTS BROBOT KIT: (Arduino MEGA2560 R2 + BROBOT ELECTRONIC BRAIN SHIELD + STEPPER MOTOR drivers)
+// JJROBOTS BROBOT KIT: (Arduino Leonardo + BROBOT ELECTRONIC BRAIN SHIELD + STEPPER MOTOR drivers)
 // This code is prepared for new BROBOT shield  with ESP8266 Wifi module
 // Author: JJROBOTS.COM
 // Date: 02/09/2014
-// Updated: 05/06/2018 Monty McGraw for MEGA2560
+// Updated: 25/06/2017
 // Version: 2.82
 // License: GPL v2
 // Compiled and tested with Arduino 1.6.8. This new version of code does not need external libraries (only Arduino standard libraries)
@@ -45,6 +45,8 @@
 //    PAGE2: PID adjustements [optional][dont touch if you dont know what you are doing...;-) ]
 
 #include <Wire.h>
+#include <SoftwareServo.h>
+SoftwareServo myservo1,myservo2;  // create servo object to control two servos
 
 // Uncomment this lines to connect to an external Wifi router (join an existing Wifi network)
 //#define EXTERNAL_WIFI
@@ -87,12 +89,13 @@
 #define ANGLE_OFFSET 0.0  // Offset angle for balance (to compensate robot own weight distribution)
 
 // Servo definitions
-#define SERVO_AUX_NEUTRO 1500  // Servo neutral position
-#define SERVO_MIN_PULSEWIDTH 700
-#define SERVO_MAX_PULSEWIDTH 2500
+#define SERVO_AUX_NEUTRO 90  // Servo neutral position in degrees
+#define SERVO_MIN_PULSEWIDTH 0
+#define SERVO_MAX_PULSEWIDTH 180
 
-#define SERVO2_NEUTRO 1500
-#define SERVO2_RANGE 1400
+#define SERVO2_NEUTRO 90
+#define SERVO2_RANGE 180
+
 
 // Telemetry
 #define TELEMETRY_BATTERY 1
@@ -104,7 +107,7 @@
 
 #define MICROSTEPPING 16   // 8 or 16 for 1/8 or 1/16 driver microstepping (default:16)
 
-#define DEBUG 0   // 0 = No debug info (default) DEBUG 1 for console output
+#define DEBUG 1   // 0 = No debug info (default) DEBUG 1 for console output
 
 // AUX definitions
 #define CLR(x,y) (x&=(~(1<<y)))
@@ -198,16 +201,21 @@ int16_t OSCmove_steps2;
 void setup()
 {
   // STEPPER PINS ON JJROBOTS BROBOT BRAIN BOARD
-  pinMode(1, OUTPUT); // ENABLE MOTORS
-  pinMode(16, OUTPUT); // STEP MOTOR 1 PORTE,6
-  pinMode(17, OUTPUT); // DIR MOTOR 1  PORTB,4
-  pinMode(25, OUTPUT); // STEP MOTOR 2 PORTD,6
+  pinMode(4, OUTPUT); // ENABLE MOTORS
+  pinMode(7, OUTPUT); // STEP MOTOR 1 PORTE,6
+  pinMode(8, OUTPUT); // DIR MOTOR 1  PORTB,4
+  pinMode(12, OUTPUT); // STEP MOTOR 2 PORTD,6
   pinMode(5, OUTPUT); // DIR MOTOR 2  PORTC,6
-  digitalWrite(1, HIGH);  // Disable motors
-  pinMode(23, OUTPUT);  // Servo1 (arm)
-  pinMode(26, OUTPUT);  // Servo2
-
+  digitalWrite(4, HIGH);  // Disable motors
+  /*
+  pinMode(10, OUTPUT);  // Servo1 (arm)
+  pinMode(13, OUTPUT);  // Servo2
+  */
   Serial.begin(115200); // Serial output to console
+  /* Serial.end();
+  pinMode(1, INPUT);  // disable serial pins 0 and 1
+  pinMode(0, INPUT);  // use jumper cables from pins 0 and 1 to 18 and 19 for Serial1 to talk to Wifi
+  */
   Serial1.begin(115200);
   OSC_init();
 
@@ -284,12 +292,16 @@ void setup()
 
   // Init servos
   Serial.println("Servo init");
-  BROBOT_initServo();
-  BROBOT_moveServo1(SERVO_AUX_NEUTRO);
+
+  myservo1.attach(10);
+  myservo2.attach(13);
+  myservo1.write(SERVO_AUX_NEUTRO);
+  myservo2.write(SERVO_AUX_NEUTRO);
+  SoftwareServo::refresh();
 
   // STEPPER MOTORS INITIALIZATION
-  Serial.println("Stepers init");
-  // MOTOR1 => TIMER1
+  Serial.println("Steppers init");
+  /* MOTOR1 => TIMER1
   TCCR1A = 0;                       // Timer1 CTC mode 4, OCxA,B outputs disconnected
   TCCR1B = (1 << WGM12) | (1 << CS11); // Prescaler=8, => 2Mhz
   OCR1A = ZERO_SPEED;               // Motor stopped
@@ -309,23 +321,30 @@ void setup()
   // Enable TIMERs interrupts
   TIMSK1 |= (1 << OCIE1A); // Enable Timer1 interrupt
   TIMSK3 |= (1 << OCIE1A); // Enable Timer1 interrupt
-
+  */
+  
   // Little motor vibration and servo move to indicate that robot is ready
   for (uint8_t k = 0; k < 5; k++)
   {
-    setMotorSpeedM1(5);
+    /*setMotorSpeedM1(5);
     setMotorSpeedM2(5);
-    BROBOT_moveServo1(SERVO_AUX_NEUTRO + 100);
-    BROBOT_moveServo2(SERVO2_NEUTRO + 100);
+    */
+    myservo1.write(SERVO_AUX_NEUTRO + 10);
+    myservo2.write(SERVO2_NEUTRO + 10);
+    SoftwareServo::refresh();
     delay(200);
-    setMotorSpeedM1(-5);
+    /* setMotorSpeedM1(-5);
     setMotorSpeedM2(-5);
-    BROBOT_moveServo1(SERVO_AUX_NEUTRO - 100);
-    BROBOT_moveServo2(SERVO2_NEUTRO - 100);
+    */
+    
+    myservo1.write(SERVO_AUX_NEUTRO - 10);
+    myservo2.write(SERVO2_NEUTRO - 10);
+    SoftwareServo::refresh();
     delay(200);
   }
-  BROBOT_moveServo1(SERVO_AUX_NEUTRO);
-  BROBOT_moveServo2(SERVO2_NEUTRO);
+  myservo1.write(SERVO_AUX_NEUTRO);
+  myservo2.write(SERVO2_NEUTRO);
+  SoftwareServo::refresh();
 
  #if TELEMETRY_BATTERY==1
   BatteryValue = BROBOT_readBattery(true);
@@ -529,15 +548,18 @@ void loop()
     if (OSCpush[0])  // Move arm
     {
       if (angle_adjusted > -40)
-        BROBOT_moveServo1(SERVO_MIN_PULSEWIDTH);
-      else
-        BROBOT_moveServo1(SERVO_MAX_PULSEWIDTH);
+        myservo1.write(SERVO_MIN_PULSEWIDTH);
+          else
+        myservo1.write(SERVO_MAX_PULSEWIDTH);
+        SoftwareServo::refresh();
     }
     else
-      BROBOT_moveServo1(SERVO_AUX_NEUTRO);
+      myservo1.write(SERVO_AUX_NEUTRO);
+      SoftwareServo::refresh();
 
     // Servo2
-    BROBOT_moveServo2(SERVO2_NEUTRO + (OSCfader[2] - 0.5) * SERVO2_RANGE);
+    myservo2.write(SERVO2_NEUTRO + (OSCfader[2] - 0.5) * SERVO2_RANGE);
+    SoftwareServo::refresh();
 
     // Normal condition?
     if ((angle_adjusted < 56) && (angle_adjusted > -56))

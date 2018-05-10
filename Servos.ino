@@ -5,14 +5,14 @@
 
 //#include "Arduino.h"
 
-// Default servo definitions
+/* Default servo definitions  commented out by MCM - we are using Servo library
 #define SERVO1_AUX_NEUTRO 1500  // Servo neutral position
 #define SERVO1_MIN_PULSEWIDTH 700
 #define SERVO1_MAX_PULSEWIDTH 2300
 #define SERVO2_AUX_NEUTRO 1500  // Servo neutral position
 #define SERVO2_MIN_PULSEWIDTH 700
 #define SERVO2_MAX_PULSEWIDTH 2300
-
+*/
 
 #define BATT_VOLT_FACTOR 8
 
@@ -21,6 +21,8 @@ int battery;
 // Init servo on T4 timer. Output OC4B (Leonardo Pin10)
 // We configure the Timer4 for 11 bits PWM (enhacend precision) and 16.3ms period (OK for most servos)
 // Resolution: 8us per step (this is OK for servos, around 175 steps for typical servo)
+
+/*
 void BROBOT_initServo()
 {
 int temp;
@@ -30,7 +32,7 @@ int temp;
   TCCR4B = 0;
   TCCR4C = (1<<PWM4D);
   TCCR4D = 0;
-  TCCR4E = (1<<ENHC4); // Enhaced -> 11 bits
+  TCCR4E = (1<<ENHC4); // Enhanced -> 11 bits
 
   temp = 1500>>3;
   TC4H = temp >> 8;
@@ -73,6 +75,7 @@ void BROBOT_moveServo2(int pwm)
   OCR4A = pwm & 0xFF;  // 2.0 or 2.3  boards servo2 output
   OCR4D = pwm & 0xFF;  // 2.1 or 2.4  boards servo2 output
 }
+*/
 
 // output : Battery voltage*10 (aprox) and noise filtered
 int BROBOT_readBattery(bool first_time)

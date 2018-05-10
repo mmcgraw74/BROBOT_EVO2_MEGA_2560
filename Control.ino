@@ -57,13 +57,13 @@ ISR(TIMER1_COMPA_vect)
   if (dir_M1 == 0) // If we are not moving we dont generate a pulse
     return;
   // We generate 1us STEP pulse
-  SET(PORTE, 6); // STEP MOTOR 1
+  SET(PORTH, 4); // STEP MOTOR 1
   //delay_1us();
   if (dir_M1 > 0)
     steps1--;
   else
     steps1++;
-  CLR(PORTE, 6);
+  CLR(PORTH, 4);
 }
 // TIMER 3 : STEPPER MOTOR2 SPEED CONTROL
 ISR(TIMER3_COMPA_vect)
@@ -71,13 +71,13 @@ ISR(TIMER3_COMPA_vect)
   if (dir_M2 == 0) // If we are not moving we dont generate a pulse
     return;
   // We generate 1us STEP pulse
-  SET(PORTD, 6); // STEP MOTOR 2
+  SET(PORTB, 6); // STEP MOTOR 2
   //delay_1us();
   if (dir_M2 > 0)
     steps2--;
   else
     steps2++;
-  CLR(PORTD, 6);
+  CLR(PORTB, 6);
 }
 
 
@@ -113,13 +113,13 @@ void setMotorSpeedM1(int16_t tspeed)
   {
     timer_period = 2000000 / speed; // 2Mhz timer
     dir_M1 = 1;
-    SET(PORTB, 4); // DIR Motor 1 (Forward)
+    SET(PORTH, 5); // DIR Motor 1 (Forward)
   }
   else
   {
     timer_period = 2000000 / -speed;
     dir_M1 = -1;
-    CLR(PORTB, 4); // Dir Motor 1
+    CLR(PORTH, 5); // Dir Motor 1
   }
   if (timer_period > 65535)   // Check for minimun speed (maximun period without overflow)
     timer_period = ZERO_SPEED;
@@ -162,13 +162,13 @@ void setMotorSpeedM2(int16_t tspeed)
   {
     timer_period = 2000000 / speed; // 2Mhz timer
     dir_M2 = 1;
-    CLR(PORTC, 6);   // Dir Motor2 (Forward)
+    CLR(PORTE, 3);   // Dir Motor2 (Forward)
   }
   else
   {
     timer_period = 2000000 / -speed;
     dir_M2 = -1;
-    SET(PORTC, 6);  // DIR Motor 2
+    SET(PORTE, 3);  // DIR Motor 2
   }
   if (timer_period > 65535)   // Check for minimun speed (maximun period without overflow)
     timer_period = ZERO_SPEED;
