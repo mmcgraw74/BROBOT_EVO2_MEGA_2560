@@ -1,10 +1,11 @@
 // BROBOT EVO 2 by JJROBOTS
 // SELF BALANCE ARDUINO ROBOT WITH STEPPER MOTORS CONTROLLED WITH YOUR SMARTPHONE
-// JJROBOTS BROBOT KIT: (Arduino Leonardo + BROBOT ELECTRONIC BRAIN SHIELD + STEPPER MOTOR drivers)
+// JJROBOTS BROBOT KIT: (Arduino Mega + BROBOT ELECTRONIC BRAIN SHIELD + STEPPER MOTOR drivers)
 // This code is prepared for new BROBOT shield  with ESP8266 Wifi module
 // Author: JJROBOTS.COM
 // Date: 02/09/2014
 // Updated: 25/06/2017
+// Modified: 10/05/2018 by Monty McGraw (Nikola-wan) for Arduino Mega
 // Version: 2.82
 // License: GPL v2
 // Compiled and tested with Arduino 1.6.8. This new version of code does not need external libraries (only Arduino standard libraries)
