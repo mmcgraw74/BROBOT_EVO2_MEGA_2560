@@ -15,3 +15,5 @@ I had to modify the Leonardo program files for several things that are different
 - I merged my Touch OSC code changes which provide battery voltage and battery percentage plus PID values on the PID screen
 
 This is still a work in progress:  the additional mass has not been factored into the default PIDs, so the Mega EVO2 is drivable in PRO mode, but not as stable as the Leonardo EVO2 yet.
+
+All Arduino files are included, my stretched Stealth Remix EVO2 chassis STL files and my TOUCH OSC file - works with my iPHONE6s
