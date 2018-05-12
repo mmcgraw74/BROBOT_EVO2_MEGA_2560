@@ -40,7 +40,7 @@
 // OSC controls:
 //    fader1: Throttle (0.0-1.0) OSC message: /1/fader1
 //    fader2: Steering (0.0-1.0) OSC message: /1/fader2
-//    push1: Move servo arm (and robot raiseup) OSC message /1/push1 
+//    push1: Move servo arm (and robot raiseup) OSC message /1/push1
 //    if you enable the touchMessage on TouchOSC options, controls return to center automatically when you lift your fingers
 //    PRO mode (PRO button). On PRO mode steering and throttle are more aggressive
 //    PAGE2: PID adjustements [optional][dont touch if you dont know what you are doing...;-) ]
@@ -72,7 +72,13 @@ SoftwareServo myservo1,myservo2;  // create servo object to control two servos
 #define KP 0.32       
 #define KD 0.050     
 #define KP_THROTTLE 0.080 
-#define KI_THROTTLE 0.1 
+#define KI_THROTTLE 0.1
+
+float Kpu_old;
+float Kdu_old;
+float Kpt_old;
+float Kit_old;
+
 #define KP_POSITION 0.06  
 #define KD_POSITION 0.45  
 //#define KI_POSITION 0.02
@@ -117,12 +123,17 @@ SoftwareServo myservo1,myservo2;  // create servo object to control two servos
 #define GRAD2RAD 0.01745329251994329576923690768489
 
 String MAC;  // MAC address of Wifi module
+String tempstring;
 
+unsigned int testVal = 0;
 uint8_t cascade_control_loop_counter = 0;
 uint8_t loop_counter;       // To generate a medium loop 40Hz
 uint8_t slow_loop_counter;  // slow loop 2Hz
 uint8_t sendBattery_counter; // To send battery status
 int16_t BatteryValue;
+static char outstr[4];
+float BatteryFloat;
+float BatteryReal;
 
 long timer_old;
 long timer_value;
@@ -132,7 +143,7 @@ float dt;
 // Angle of the robot (used for stability control)
 float angle_adjusted;
 float angle_adjusted_Old;
-float angle_adjusted_filtered=0.0;
+float angle_adjusted_filtered = 0.0;
 
 // Default control values from constant definitions
 float Kp = KP;
@@ -213,10 +224,7 @@ void setup()
   pinMode(13, OUTPUT);  // Servo2
   */
   Serial.begin(115200); // Serial output to console
-  /* Serial.end();
-  pinMode(1, INPUT);  // disable serial pins 0 and 1
-  pinMode(0, INPUT);  // use jumper cables from pins 0 and 1 to 18 and 19 for Serial1 to talk to Wifi
-  */
+  
   Serial1.begin(115200);
   OSC_init();
 
@@ -281,9 +289,9 @@ void setup()
   ESPsendCommand("AT+CIPMUX=0", "OK", 3);  // Single connection mode
   ESPsendCommand("AT+CIPMODE=1", "OK", 3); // Transparent mode
   char Telemetry[80];
-  strcpy(Telemetry,"AT+CIPSTART=\"UDP\",\"");
-  strcat(Telemetry,TELEMETRY);
-  strcat(Telemetry,"\",2223,2222,0");
+  strcpy(Telemetry, "AT+CIPSTART=\"UDP\",\"");
+  strcat(Telemetry, TELEMETRY);
+  strcat(Telemetry, "\",2223,2222,0");
   ESPsendCommand(Telemetry, "OK", 3); 
 
   // Calibrate gyros
@@ -293,6 +301,7 @@ void setup()
 
   // Init servos
   Serial.println("Servo init");
+  BROBOT_initServo();
 
   myservo1.attach(10);
   myservo2.attach(13);
@@ -302,7 +311,7 @@ void setup()
 
   // STEPPER MOTORS INITIALIZATION
   Serial.println("Steppers init");
-  /* MOTOR1 => TIMER1
+  //MOTOR1 => TIMER1
   TCCR1A = 0;                       // Timer1 CTC mode 4, OCxA,B outputs disconnected
   TCCR1B = (1 << WGM12) | (1 << CS11); // Prescaler=8, => 2Mhz
   OCR1A = ZERO_SPEED;               // Motor stopped
@@ -322,7 +331,7 @@ void setup()
   // Enable TIMERs interrupts
   TIMSK1 |= (1 << OCIE1A); // Enable Timer1 interrupt
   TIMSK3 |= (1 << OCIE1A); // Enable Timer1 interrupt
-  */
+  
   
   // Little motor vibration and servo move to indicate that robot is ready
   for (uint8_t k = 0; k < 5; k++)
@@ -550,7 +559,7 @@ void loop()
     {
       if (angle_adjusted > -40)
         myservo1.write(SERVO_MIN_PULSEWIDTH);
-          else
+      else
         myservo1.write(SERVO_MAX_PULSEWIDTH);
         SoftwareServo::refresh();
     }
@@ -587,7 +596,7 @@ void loop()
     // Telemetry here?
 #if TELEMETRY_ANGLE==1
     char auxS[25];
-    int ang_out = constrain(int(angle_adjusted * 10),-900,900);
+    int ang_out = constrain(int(angle_adjusted * 10), -900, 900);
     sprintf(auxS, "$tA,%+04d", ang_out);
     Serial1.println(auxS);
 #endif
@@ -603,15 +612,36 @@ void loop()
     slow_loop_counter = 0;
     // Read  status
 #if TELEMETRY_BATTERY==1
-    BatteryValue = (BatteryValue + BROBOT_readBattery(false)) / 2;
+    int BatteryValue = (BatteryValue + BROBOT_readBattery(false)) / 2;
     sendBattery_counter++;
     if (sendBattery_counter >= 3) { //Every 3 seconds we send a message
       sendBattery_counter = 0;
-      Serial.print("B");
+      char OSCaddress[32] = {"/1/label5\0\0\0,f\0\0\0\0\0\0"};
+      char OSCdata[5] = {" red"};
+      float BatteryReal = BatteryValue / 10.0f;
+      dtostrf(BatteryReal, 4, 1, OSCdata);
+      //now update the battery /1/rotary1 graph by scaling batteryfloat to Max and Min battery values
+#if LIPOBATT==0       //Alkaline - warn at 1.1Volts per cell = 6.6V pack  Min=1Vpc 6.0V pack, Max=1.5Vpc 9.0V pack
+      // From >10.6 volts (100%) to 9.2 volts (0%) (aprox) ---- this comment and float are from original BROBOT.INO
+      // float value = constrain((BatteryValue-92)/14.0,0.0,1.0);
+
+      // From >9.0 volts (100%) to 6.0 volts (0%) (aprox)  for AA Alkaline battery pack of 6
+      //float value = constrain((BatteryValue - 60) / 30.0, 0.0, 1.0);
+      float value = 0.6f;
+#else
+      // For Lipo battery use better this config: (From >11.5v (100%) to 9.5v (0%)
+      //float value = constrain((BatteryValue - 95) / 20.0, 0.0, 1.0);
+      float value = 0.6f;
+#endif
+      //  Battery data output to phone is now in OSCxy module - only sent after OSC ping is received by phone
+      // OSC_MsgSend("/1/fader8\0\0\0,f\0\0\0\0\0\0",20,value);
+      Serial.print("value:");
       Serial.println(BatteryValue);
-      char auxS[25];
-      sprintf(auxS, "$tB,%04d", BatteryValue);
-      Serial1.println(auxS);
+      Serial.print("BatteryReal:");
+      //dtostrf(BatteryReal, 4, 1, OSCdata);
+      //Serial.println(OSCdata);
+      // OSC_StrSend("/1/label8\0\0\0,s\0\0red\0",20,OSCdata);
+      
     }
 #endif
   }  // End of slow loop
